@@ -1,0 +1,46 @@
+
+name: microservices-deployment
+
+services:
+  postgresdb:
+    image: postgres:16-alpine
+    container_name: postgresdb
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: docker
+      POSTGRES_DB: airconditionerservice2400032964db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d airconditionerservice2400032964db"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    networks:
+      - microservices-network
+
+  airconditioner-service:
+    image: koushik32964/airconditionerdemo:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: airconditioner-service
+    ports:
+      - "2002:2006"
+    depends_on:
+      postgresdb:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - microservices-network
+
+volumes:
+  postgres_data:
+
+networks:
+  microservices-network:
+    driver: bridge
